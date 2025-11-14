@@ -14,7 +14,7 @@ public class Recipe_Ingredient {
     private Recipe recipe;
     private Ingredient ingredient;
     
-    Recipe_Ingredient(){};
+    public Recipe_Ingredient(){};
 
     public Recipe_Ingredient(int quantity, String unit, Recipe recipe, Ingredient ingredient) {
         this.quantity = quantity;
