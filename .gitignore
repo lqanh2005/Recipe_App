@@ -1,0 +1,13 @@
+# NetBeans/Ant project files to ignore
+
+# Compiled output
+/build/
+/dist/
+*.jar
+
+# IDE specific configuration
+/nbproject/private/
+
+# Other temporary files
+*.bak
+*.log
