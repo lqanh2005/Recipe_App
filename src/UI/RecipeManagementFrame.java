@@ -61,6 +61,11 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
         });
 
         btnEdit.setText("Sửa");
+        btnEdit.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                btnEditActionPerformed(evt);
+            }
+        });
 
         btnDel.setText("Xóa");
         btnDel.addActionListener(new java.awt.event.ActionListener() {
@@ -116,9 +121,6 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
-    private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddActionPerformed
-    }//GEN-LAST:event_btnAddActionPerformed
     private int getSelectedRecipeId() {
         int selectedRow = tblRecipes.getSelectedRow();
         if (selectedRow >= 0) {
@@ -161,14 +163,8 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
         if (recipeId != -1) {
             try {
                 Recipe detailRecipe = recipeController.getRecipeDetails(recipeId);
-                if (detailRecipe != null) {
-                    RecipeDetailFrame detailFrame = new RecipeDetailFrame(detailRecipe);
-                    detailFrame.setVisible(true);
-                } else {
-                    JOptionPane.showMessageDialog(this,
-                            "Không tìm thấy công thức có ID: " + recipeId,
-                            "Lỗi Dữ liệu", JOptionPane.ERROR_MESSAGE);
-                }
+                RecipeDetailsFrame detailFrame = new RecipeDetailsFrame(detailRecipe);
+                detailFrame.setVisible(true);                
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -178,26 +174,37 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
                     "Lỗi", JOptionPane.WARNING_MESSAGE);
         }
     }//GEN-LAST:event_btnDetailActionPerformed
-    public static void main(String args[]) {
-        try {
-            for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
-                if ("Nimbus".equals(info.getName())) {
-                    javax.swing.UIManager.setLookAndFeel(info.getClassName());
-                    break;
-                }
-            }
-        } catch (ReflectiveOperationException | javax.swing.UnsupportedLookAndFeelException ex) {
-            logger.log(java.util.logging.Level.SEVERE, null, ex);
-        }
-        java.awt.EventQueue.invokeLater(() -> {
+
+    private void btnEditActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnEditActionPerformed
+        int recipeId = getSelectedRecipeId();
+        if (recipeId != -1) {
             try {
-                new RecipeManagementFrame().setVisible(true);
+                Recipe editRecipe = recipeController.getRecipeDetails(recipeId);
+                RecipeEditFrame editFrame = new RecipeEditFrame(this,editRecipe);
+                editFrame.setVisible(true);
+                
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            JOptionPane.showMessageDialog(this,"Vui lòng chọn một công thức để sửa.","Lỗi", JOptionPane.WARNING_MESSAGE);
+        }
+    }//GEN-LAST:event_btnEditActionPerformed
+
+    private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddActionPerformed
+        // TODO add your handling code here:
+        RecipeAddFrame frame = new RecipeAddFrame(this,1);
+        frame.setVisible(true);
+    }//GEN-LAST:event_btnAddActionPerformed
+    public static void main(String args[]) {
+        java.awt.EventQueue.invokeLater(() -> {try {
+            new RecipeManagementFrame().setVisible(true);
             } catch (Exception ex) {
                 System.getLogger(RecipeManagementFrame.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
             }
-        });
+});
     }
-    private void loadRecipeData() throws Exception {
+    void loadRecipeData() throws Exception {
         Object[] tableData = recipeController.getTableDataForUser(1);
         Object[][] data = (Object[][]) tableData[0];
         String[] columnNames = (String[]) tableData[1];
