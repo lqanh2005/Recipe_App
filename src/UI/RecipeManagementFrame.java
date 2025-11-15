@@ -121,9 +121,6 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
 
         pack();
     }// </editor-fold>//GEN-END:initComponents
-
-    private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddActionPerformed
-    }//GEN-LAST:event_btnAddActionPerformed
     private int getSelectedRecipeId() {
         int selectedRow = tblRecipes.getSelectedRow();
         if (selectedRow >= 0) {
@@ -193,6 +190,12 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
             JOptionPane.showMessageDialog(this,"Vui lòng chọn một công thức để sửa.","Lỗi", JOptionPane.WARNING_MESSAGE);
         }
     }//GEN-LAST:event_btnEditActionPerformed
+
+    private void btnAddActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_btnAddActionPerformed
+        // TODO add your handling code here:
+        RecipeAddFrame frame = new RecipeAddFrame(this,1);
+        frame.setVisible(true);
+    }//GEN-LAST:event_btnAddActionPerformed
     public static void main(String args[]) {
         java.awt.EventQueue.invokeLater(() -> {try {
             new RecipeManagementFrame().setVisible(true);
@@ -201,7 +204,7 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
             }
 });
     }
-    private void loadRecipeData() throws Exception {
+    void loadRecipeData() throws Exception {
         Object[] tableData = recipeController.getTableDataForUser(1);
         Object[][] data = (Object[][]) tableData[0];
         String[] columnNames = (String[]) tableData[1];

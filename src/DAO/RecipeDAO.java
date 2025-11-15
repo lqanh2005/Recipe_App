@@ -7,10 +7,7 @@ package DAO;
 import java.util.ArrayList;
 import model.Recipe;
 import model.User;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.*;
 import model.Ingredient;
 import model.Recipe_Ingredient;
 import model.Step;
@@ -146,5 +143,186 @@ public class RecipeDAO {
             ingredients.add(ri);
         }
         return ingredients;
+    }
+    public boolean updateRecipeInfo(Recipe recipe) throws SQLException {
+        String sql = "UPDATE Recipe SET title = ?, imageURL = ?, description = ? WHERE recipeID = ?";
+        Connection connection = null;
+        PreparedStatement ps = null;
+        connection = DBConnection.getConnection();
+        ps = connection.prepareStatement(sql);
+        ps.setString(1, recipe.getTitle());
+        ps.setString(2, recipe.getImageURL());
+        ps.setString(3, recipe.getDescription());
+        ps.setInt(4, recipe.getRecipeID());
+        return ps.executeUpdate() > 0;
+    }
+    public int getOrCreateIngredientId(Ingredient ingredient) throws SQLException {
+        String selectSql = "SELECT ingredientID, imageURL FROM Ingredient WHERE name = ?";
+        Connection connection = null;
+        PreparedStatement selectPs = null;
+        ResultSet rs = null;
+        connection = DBConnection.getConnection();
+        selectPs = connection.prepareStatement(selectSql);
+        selectPs.setString(1, ingredient.getName());
+        rs = selectPs.executeQuery();
+
+        if (rs.next()) {
+            int existingId = rs.getInt("ingredientID");
+            String existingImageUrl = rs.getString("imageURL");
+            if (!ingredient.getImageURL().equals(existingImageUrl)) {
+                updateIngredientImageUrl(existingId, ingredient.getImageURL());
+            }
+            return existingId;
+        } else {
+            return addIngredient(ingredient, connection);
+        }
+    }
+    private void updateIngredientImageUrl(int ingredientID, String imageUrl) throws SQLException {
+        String updateSql = "UPDATE Ingredient SET imageURL = ? WHERE ingredientID = ?";
+        Connection connection = null;
+        PreparedStatement updatePs = null;
+        try {
+            connection = DBConnection.getConnection();
+            updatePs = connection.prepareStatement(updateSql);
+            updatePs.setString(1, imageUrl);
+            updatePs.setInt(2, ingredientID);
+            updatePs.executeUpdate();
+        } finally {
+            try {
+                if (updatePs != null) {
+                    updatePs.close();
+                }
+            } catch (SQLException e) {
+            }
+            DBConnection.closeConnection(connection);
+        }
+    }
+    private int addIngredient(Ingredient ingredient, Connection existingConnection) throws SQLException {
+        String insertSql = "INSERT INTO Ingredient (name, imageURL) VALUES (?, ?)";
+        Connection connection = null;
+        PreparedStatement insertPs = null;
+        ResultSet generatedKeys = null;
+        int newId = -1;
+            connection = DBConnection.getConnection();
+            insertPs = connection.prepareStatement(insertSql, Statement.RETURN_GENERATED_KEYS);
+            insertPs.setString(1, ingredient.getName());
+            insertPs.setString(2, ingredient.getImageURL());
+
+            insertPs.executeUpdate();
+
+            generatedKeys = insertPs.getGeneratedKeys();
+            if (generatedKeys.next()) {
+                newId = generatedKeys.getInt(1);
+            }
+            return newId;
+    }
+    public boolean deleteRecipeIngredientsByRecipeId(int recipeId) throws SQLException {
+        String sql = "DELETE FROM Recipe_Ingredient WHERE recipeID = ?";
+        Connection connection = null;
+        PreparedStatement ps = null;
+        try {
+            connection = DBConnection.getConnection();
+            ps = connection.prepareStatement(sql);
+            ps.setInt(1, recipeId);
+            ps.executeUpdate();
+            return true;
+        } finally {
+            try { if (ps != null) ps.close(); } catch (SQLException e) {}
+            DBConnection.closeConnection(connection);
+        }
+    }
+    public boolean addRecipeIngredient(Recipe_Ingredient ri) throws SQLException {
+        String sql = "INSERT INTO Recipe_Ingredient (recipeID, ingredientID, quantity, unit) VALUES (?, ?, ?, ?)";
+        Connection connection = null;
+        PreparedStatement ps = null;
+        if (ri.getRecipe() == null || ri.getIngredient() == null) {
+            return false;
+        }
+        connection = DBConnection.getConnection();
+        ps = connection.prepareStatement(sql);
+
+        ps.setInt(1, ri.getRecipe().getRecipeID());
+        ps.setInt(2, ri.getIngredient().getIngredientID());
+        ps.setInt(3, ri.getQuantity());
+        ps.setString(4, ri.getUnit());
+
+        return ps.executeUpdate() > 0;
+    }
+    
+    public boolean deleteStepsByRecipeId(int recipeId) throws SQLException {
+        String sql = "DELETE FROM Step WHERE recipeID = ?";
+        Connection connection = null;
+        PreparedStatement ps = null;
+        try {
+            connection = DBConnection.getConnection();
+            ps = connection.prepareStatement(sql);
+            ps.setInt(1, recipeId);
+            ps.executeUpdate();
+            return true;
+        } finally {
+            try {
+                if (ps != null) {
+                    ps.close();
+                }
+            } catch (SQLException e) {
+            }
+            DBConnection.closeConnection(connection);
+        }
+    }
+    
+    public boolean addStep(Step step) throws SQLException {
+        String sql = "INSERT INTO Step (stepNumber, description, imageURL, recipeID) VALUES (?, ?, ?, ?)";
+        Connection connection = null;
+        PreparedStatement ps = null;
+
+        if (step.getRecipe() == null) {
+            return false;
+        }
+
+        connection = DBConnection.getConnection();
+        ps = connection.prepareStatement(sql);
+
+        ps.setInt(1, step.getStepNumber());
+        ps.setString(2, step.getDescription());
+        ps.setString(3, step.getImageURL());
+        ps.setInt(4, step.getRecipe().getRecipeID());
+
+        return ps.executeUpdate() > 0;
+    }
+    public int addRecipeInfo(Recipe recipe) throws SQLException {
+        String sql = "INSERT INTO Recipe (title, imageURL, description, userID) VALUES (?, ?, ?, ?)";
+        Connection connection = null;
+        PreparedStatement ps = null;
+        ResultSet generatedKeys = null;
+        int newRecipeId = -1;
+        if (recipe.getUser() == null) {
+            System.err.println("Lỗi: Recipe không có UserID để thêm công thức.");
+            return -1;
+        }
+        try {
+            connection = DBConnection.getConnection();
+            ps = connection.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
+
+            ps.setString(1, recipe.getTitle());
+            ps.setString(2, recipe.getImageURL());
+            ps.setString(3, recipe.getDescription());
+            ps.setInt(4, recipe.getUser().getUserID());
+
+            int rowsAffected = ps.executeUpdate();
+
+            if (rowsAffected > 0) {
+                generatedKeys = ps.getGeneratedKeys();
+                if (generatedKeys.next()) {
+                    newRecipeId = generatedKeys.getInt(1);
+                }
+            }
+
+            return newRecipeId;
+
+        } catch (SQLException e) {
+            System.err.println("Lỗi khi thêm công thức mới: " + e.getMessage());
+            e.printStackTrace();
+            throw e; 
+        } 
     }
 }

@@ -4,6 +4,7 @@
  */
 package UI;
 
+import Controller.RecipeController;
 import java.util.ArrayList;
 import javax.swing.JFileChooser;
 import javax.swing.JOptionPane;
@@ -12,31 +13,42 @@ import model.Ingredient;
 import model.Recipe;
 import model.Recipe_Ingredient;
 import model.Step;
+import model.User;
 
 /**
  *
  * @author nguye
  */
-public class RecipeEditFrame extends javax.swing.JFrame {
+public class RecipeAddFrame extends javax.swing.JFrame {
     
-    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(RecipeEditFrame.class.getName());
-    private final Recipe recipe;
-    public RecipeEditFrame(RecipeManagementFrame parent, Recipe recipe) {
-        this.recipe = recipe;
+    private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(RecipeAddFrame.class.getName());
+    private final RecipeController recipeController = new Controller.RecipeController();
+    private final RecipeManagementFrame parentFrame;
+    private final Recipe newRecipe;
+    private int currentUserId = 1;
+
+    public RecipeAddFrame(RecipeManagementFrame parent, int userId) {
+        this.parentFrame = parent;
+        this.currentUserId = userId;
+        this.newRecipe = new Recipe();
+        this.newRecipe.setUser(new User(userId, null, null));
+        this.newRecipe.setIngredients(new ArrayList<>());
+        this.newRecipe.setSteps(new ArrayList<>());
+
         initComponents();
         txtID.setEditable(false);
         initializeTableModels();
-        populateDetails();
+        populateNewRecipeForm();
     }
-    private void populateDetails() {
-        this.setTitle("Chỉnh sửa: " + recipe.getTitle());
-        lblEdit.setText("Sửa công thức: " + recipe.getTitle());
-        txtID.setText(String.valueOf(recipe.getRecipeID()));
-        txtName.setText(recipe.getTitle());
-        txtDesc.setText(recipe.getDescription());
-        txtImagePath.setText(recipe.getImageURL());
-        loadIngredientTable(recipe.getIngredients());
-        loadStepTable(recipe.getSteps());
+    private void populateNewRecipeForm() {
+        this.setTitle("Thêm công thức mới");
+        lblEdit.setText("Thêm công thức mới");
+
+        txtID.setText("Tạo mới");
+        txtName.setText("");
+        txtDesc.setText("");
+        txtImagePath.setText("");
+
     }
     private void initializeTableModels() {
         DefaultTableModel ingredientModel = new DefaultTableModel(new Object[]{"ID Nguyên liệu", "Tên", "Số lượng", "Đơn vị", "Đường dẫn Ảnh"}, 0) {
@@ -54,37 +66,6 @@ public class RecipeEditFrame extends javax.swing.JFrame {
         };
         tblSteps.setModel(stepModel);
     }
-     
-    private void loadIngredientTable(ArrayList<Recipe_Ingredient> ingredients) {
-        DefaultTableModel model = (DefaultTableModel) tblIngredients.getModel();
-        model.setRowCount(0);
-        if (ingredients != null) {
-            for (Recipe_Ingredient ri : ingredients) {
-                Ingredient ing = ri.getIngredient();
-                model.addRow(new Object[]{
-                    ing.getIngredientID(),
-                    ing.getName(),
-                    ri.getQuantity(),
-                    ri.getUnit(),
-                    ing.getImageURL()
-                });
-            }
-        }
-    }
-    
-    private void loadStepTable(ArrayList<Step> steps) {
-        DefaultTableModel model = (DefaultTableModel) tblSteps.getModel();
-        model.setRowCount(0);
-        if (steps != null) {
-            for (Step step : steps) {
-                model.addRow(new Object[]{
-                    step.getStepNumber(),
-                    step.getDescription(),
-                    step.getImageURL()
-                });
-            }
-        }
-    }
     private String promptForImagePath(String dialogTitle) {
         JFileChooser fileChooser = new JFileChooser();
         fileChooser.setDialogTitle(dialogTitle);
@@ -95,7 +76,7 @@ public class RecipeEditFrame extends javax.swing.JFrame {
     private ArrayList<Recipe_Ingredient> extractIngredientsFromTable() {
         DefaultTableModel model = (DefaultTableModel) tblIngredients.getModel();
         ArrayList<Recipe_Ingredient> ingredients = new ArrayList<>();
-        Recipe currentRecipeInstance = this.recipe;
+        Recipe currentRecipeInstance = this.newRecipe;
 
         for (int i = 0; i < model.getRowCount(); i++) {
             try {
@@ -131,7 +112,7 @@ public class RecipeEditFrame extends javax.swing.JFrame {
     private ArrayList<Step> extractStepsFromTable() {
         DefaultTableModel model = (DefaultTableModel) tblSteps.getModel();
         ArrayList<Step> steps = new ArrayList<>();
-        Recipe currentRecipeInstance = this.recipe;
+        Recipe currentRecipeInstance = this.newRecipe;
 
         for (int i = 0; i < model.getRowCount(); i++) {
             int stepNum = i + 1;
@@ -182,7 +163,6 @@ public class RecipeEditFrame extends javax.swing.JFrame {
         btnCancel = new javax.swing.JButton();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.DISPOSE_ON_CLOSE);
-        setPreferredSize(new java.awt.Dimension(800, 700));
         getContentPane().setLayout(new java.awt.GridBagLayout());
 
         lblEdit.setFont(new java.awt.Font("Segoe UI", 1, 18)); // NOI18N
@@ -454,24 +434,26 @@ public class RecipeEditFrame extends javax.swing.JFrame {
             return;
         }
 
-        recipe.setTitle(title);
-        recipe.setDescription(description);
-        recipe.setImageURL(imagePath);
-        recipe.setIngredients(new ArrayList<>(ingredients));
-        recipe.setSteps(new ArrayList<>(steps));
+        newRecipe.setTitle(title);
+        newRecipe.setDescription(description);
+        newRecipe.setImageURL(imagePath);
+        newRecipe.setIngredients(new ArrayList<>(ingredients));
+        newRecipe.setSteps(new ArrayList<>(steps));
 
         try {
-            boolean success = new Controller.RecipeController().updateRecipe(recipe);
+            boolean success = recipeController.addRecipe(newRecipe);
 
             if (success) {
-                JOptionPane.showMessageDialog(this, "Cập nhật công thức thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
-                this.dispose(); 
+                JOptionPane.showMessageDialog(this, "Đã thêm công thức mới thành công!", "Thành công", JOptionPane.INFORMATION_MESSAGE);
+                if (parentFrame != null) {
+                    parentFrame.loadRecipeData(); 
+                }
+                this.dispose();
             } else {
-                JOptionPane.showMessageDialog(this, "Cập nhật công thức thất bại (DAO trả về false).", "Lỗi", JOptionPane.ERROR_MESSAGE);
+                JOptionPane.showMessageDialog(this, "Thêm công thức thất bại.", "Lỗi", JOptionPane.ERROR_MESSAGE);
             }
         } catch (Exception e) {
-            logger.severe("Lỗi hệ thống khi cập nhật công thức: " + e.getMessage());
-            JOptionPane.showMessageDialog(this, "Lỗi hệ thống khi lưu: " + e.getMessage(), "Lỗi", JOptionPane.ERROR_MESSAGE);
+            e.printStackTrace();
         }
     }//GEN-LAST:event_btnSaveActionPerformed
 
