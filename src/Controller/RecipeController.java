@@ -3,6 +3,7 @@ package Controller;
 import DAO.RecipeDAO;
 import model.Recipe;
 import java.util.ArrayList;
+import model.Ingredient;
 import model.Recipe_Ingredient;
 import model.Step;
 
@@ -40,5 +41,53 @@ public class RecipeController {
             recipe.setIngredients(ingredients);
         }
         return recipe;
+    }
+    public boolean updateRecipe(Recipe recipe) throws Exception {
+        int recipeId = recipe.getRecipeID();
+        boolean success = recipeDAO.updateRecipeInfo(recipe);
+
+        if (success) {
+            recipeDAO.deleteRecipeIngredientsByRecipeId(recipeId);
+
+            for (Recipe_Ingredient ri : recipe.getIngredients()) {
+                Ingredient ingredient = ri.getIngredient();
+                int ingredientId = recipeDAO.getOrCreateIngredientId(ingredient);
+                ingredient.setIngredientID(ingredientId);
+                recipeDAO.addRecipeIngredient(ri);
+            }
+            recipeDAO.deleteStepsByRecipeId(recipeId);
+            int stepCounter = 1;
+            for (Step step : recipe.getSteps()) {
+                step.setStepNumber(stepCounter++);
+                recipeDAO.addStep(step);
+            }
+        }
+
+        return success;
+    }
+    public boolean addRecipe(Recipe recipe) throws Exception {
+
+        int newRecipeId = recipeDAO.addRecipeInfo(recipe);
+
+        if (newRecipeId > 0) {
+            recipe.setRecipeID(newRecipeId);
+
+            for (Recipe_Ingredient ri : recipe.getIngredients()) {
+                Ingredient ingredient = ri.getIngredient();
+                int ingredientId = recipeDAO.getOrCreateIngredientId(ingredient);
+                ingredient.setIngredientID(ingredientId);
+                ri.setRecipe(recipe);
+                recipeDAO.addRecipeIngredient(ri);
+            }
+
+            int stepCounter = 1;
+            for (Step step : recipe.getSteps()) {
+                step.setStepNumber(stepCounter++);
+                step.setRecipe(recipe);
+                recipeDAO.addStep(step);
+            }
+            return true;
+        }
+        return false;
     }
 }
