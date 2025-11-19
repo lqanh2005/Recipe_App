@@ -1,20 +1,37 @@
 package UI;
 import Controller.RecipeController;
-import javax.swing.JOptionPane;
+import java.awt.Dimension;
+import java.util.*;
+import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import model.Recipe;
+import DAO.RecipeDAO;
+import java.awt.Point;
+import java.awt.event.FocusAdapter;
+import java.awt.event.FocusEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.sql.SQLException;
+import javax.swing.Timer;
+
 
 public class RecipeManagementFrame extends javax.swing.JFrame {
     private static final java.util.logging.Logger logger = java.util.logging.Logger.getLogger(RecipeManagementFrame.class.getName());
     private final RecipeController recipeController = new RecipeController();
+    private Timer searchTimer;
     public RecipeManagementFrame() throws Exception {
         initComponents();
         loadRecipeData();
+        searchTimer = new Timer(200, e -> performDBSearch()); 
+        searchTimer.setRepeats(false);
+        popupMenu.setDefaultLightWeightPopupEnabled(false);
+        popupMenu.setFocusable(false);
     }
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
     private void initComponents() {
 
+        popupMenu = new javax.swing.JPopupMenu();
         scrollPaneRecipes = new javax.swing.JScrollPane();
         tblRecipes = new javax.swing.JTable();
         jLabel1 = new javax.swing.JLabel();
@@ -22,6 +39,10 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
         btnEdit = new javax.swing.JButton();
         btnDel = new javax.swing.JButton();
         btnDetail = new javax.swing.JButton();
+        txtSearch = new javax.swing.JTextField();
+        jLabel2 = new javax.swing.JLabel();
+
+        popupMenu.setFocusable(false);
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
@@ -76,6 +97,19 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
             }
         });
 
+        txtSearch.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                txtSearchActionPerformed(evt);
+            }
+        });
+        txtSearch.addKeyListener(new java.awt.event.KeyAdapter() {
+            public void keyReleased(java.awt.event.KeyEvent evt) {
+                txtSearchKeyReleased(evt);
+            }
+        });
+
+        jLabel2.setText("Tìm kiếm:");
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(getContentPane());
         getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -97,13 +131,23 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
                         .addComponent(scrollPaneRecipes, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                         .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)))
                 .addGap(34, 34, 34))
+            .addGroup(layout.createSequentialGroup()
+                .addGap(78, 78, 78)
+                .addComponent(jLabel2, javax.swing.GroupLayout.PREFERRED_SIZE, 64, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(txtSearch, javax.swing.GroupLayout.PREFERRED_SIZE, 254, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         layout.setVerticalGroup(
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, layout.createSequentialGroup()
-                .addContainerGap(19, Short.MAX_VALUE)
-                .addComponent(jLabel1, javax.swing.GroupLayout.PREFERRED_SIZE, 86, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap(7, Short.MAX_VALUE)
+                .addComponent(jLabel1)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(txtSearch, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                    .addComponent(jLabel2))
+                .addGap(40, 40, 40)
                 .addComponent(scrollPaneRecipes, javax.swing.GroupLayout.PREFERRED_SIZE, 380, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
@@ -178,6 +222,101 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
                     "Lỗi", JOptionPane.WARNING_MESSAGE);
         }
     }//GEN-LAST:event_btnDetailActionPerformed
+
+    private void txtSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtSearchActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_txtSearchActionPerformed
+
+    private void txtSearchKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtSearchKeyReleased
+        searchTimer.restart();
+    }//GEN-LAST:event_txtSearchKeyReleased
+   
+    private void showSuggestion(List<String> list) {
+        popupMenu.setVisible(false);
+        popupMenu.removeAll();
+        popupMenu.setFocusable(false);
+
+        if (list.isEmpty()) return;
+
+        JList<String> jList = new JList<>(list.toArray(new String[0]));
+        jList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        jList.setFocusable(false);
+
+        jList.addMouseListener(new MouseAdapter() {
+            @Override
+            public void mouseClicked(MouseEvent e) {
+                String s = jList.getSelectedValue();
+                if (s != null) {
+                    txtSearch.setText(s);
+                    popupMenu.setVisible(false);
+                }
+            }
+        });
+
+        JScrollPane scroll = new JScrollPane(jList);
+        scroll.setPreferredSize(new Dimension(200, Math.min(list.size() * 25, 125)));
+        scroll.setFocusable(false);
+
+        popupMenu.add(scroll);
+
+        // fix lỗi popup bị lệch, click không trúng
+        Point p = txtSearch.getLocationOnScreen();
+        popupMenu.show(txtSearch, 0, txtSearch.getHeight());
+        popupMenu.setLocation(p.x, p.y + txtSearch.getHeight());
+    }
+
+
+    private void performDBSearch() {
+        String query = txtSearch.getText();
+
+        SwingWorker<List<String>, Void> worker = new SwingWorker<>() {
+            @Override
+            protected List<String> doInBackground() throws Exception {
+                return recipeController.recipeDAO.searchRecipesByIngredient(query);  // chạy SQL ở background
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    List<String> results = get();
+                    showSuggestion(results); // cập nhật UI ở EDT
+                } catch (Exception ex) {
+                    ex.printStackTrace();
+                }
+            }
+        };
+        worker.execute();
+    }
+    private void loadRandomRecipe() {
+        int randomId = recipeController.recipeDAO.getRandomRecipeId();
+        if (randomId == -1) return;
+
+        SwingWorker<Recipe, Void> worker = new SwingWorker<>() {
+
+            @Override
+            protected Recipe doInBackground() throws Exception {
+                return recipeController.getRecipeDetails(randomId);
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    Recipe recipe = get();
+                    if (recipe != null) {
+                        RecipeDetailFrame detailFrame = new RecipeDetailFrame(recipe);
+                    }
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        };
+
+        worker.execute();
+    }
+    private void showRandomRecipe(Recipe recipe) {
+        
+    }
+
     public static void main(String args[]) {
         try {
             for (javax.swing.UIManager.LookAndFeelInfo info : javax.swing.UIManager.getInstalledLookAndFeels()) {
@@ -210,7 +349,10 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
     private javax.swing.JButton btnDetail;
     private javax.swing.JButton btnEdit;
     private javax.swing.JLabel jLabel1;
+    private javax.swing.JLabel jLabel2;
+    private javax.swing.JPopupMenu popupMenu;
     private javax.swing.JScrollPane scrollPaneRecipes;
     private javax.swing.JTable tblRecipes;
+    private javax.swing.JTextField txtSearch;
     // End of variables declaration//GEN-END:variables
 }

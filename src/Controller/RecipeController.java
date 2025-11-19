@@ -8,7 +8,7 @@ import model.Step;
 
 public class RecipeController {
 
-    private final RecipeDAO recipeDAO;
+    public final RecipeDAO recipeDAO;
     private final String[] COLUMN_NAMES = {"ID", "Tên", "Mô tả"};
     public RecipeController() {
         this.recipeDAO = new RecipeDAO();
