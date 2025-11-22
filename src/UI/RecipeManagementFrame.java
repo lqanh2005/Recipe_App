@@ -1,5 +1,6 @@
 package UI;
 import Controller.RecipeController;
+import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Point;
 import javax.swing.JOptionPane;
@@ -20,6 +21,7 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
         searchTimer.setRepeats(false);
         popupMenu.setDefaultLightWeightPopupEnabled(false);
         popupMenu.setFocusable(false);
+        showRandomRecipe();
     }
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -249,11 +251,11 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
         DefaultTableModel model = new DefaultTableModel(data, columnNames);
         tblRecipes.setModel(model);        
     }
-    private void txtSearchActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_txtSearchActionPerformed
+    private void txtSearchActionPerformed(java.awt.event.ActionEvent evt) {                                          
         // TODO add your handling code here:
     }
 
-    private void txtSearchKeyReleased(java.awt.event.KeyEvent evt) {//GEN-FIRST:event_txtSearchKeyReleased
+    private void txtSearchKeyReleased(java.awt.event.KeyEvent evt) {                                      
         searchTimer.restart();
     }
     private void showSuggestion(List<String> list) {
@@ -283,7 +285,6 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
                     }
 
                     if (detailRecipe != null) {
-                        // 🔥 Mở cửa sổ chi tiết
                         RecipeDetailsFrame detail = new RecipeDetailsFrame(detailRecipe);
                         detail.setVisible(true);
                     }
@@ -325,12 +326,11 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
         };
         worker.execute();
     }
-    private void loadRandomRecipe() {
+    private void showRandomRecipe() {
         int randomId = recipeController.recipeDAO.getRandomRecipeId();
         if (randomId == -1) return;
 
         SwingWorker<Recipe, Void> worker = new SwingWorker<>() {
-
             @Override
             protected Recipe doInBackground() throws Exception {
                 return recipeController.getRecipeDetails(randomId);
@@ -339,20 +339,48 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
             @Override
             protected void done() {
                 try {
-                    Recipe recipe = get();
-                    if (recipe != null) {
-                        RecipeDetailsFrame detailFrame = new RecipeDetailsFrame(recipe);
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
+                    Recipe randomRecipe = get();
+                    if (randomRecipe == null) return;
+
+                    // --- Tạo dialog ---
+                    JDialog dialog = new JDialog(RecipeManagementFrame.this, "Gợi ý hôm nay", true);
+                    dialog.setSize(350, 200);
+                    dialog.setLayout(new BorderLayout());
+                    dialog.setLocationRelativeTo(RecipeManagementFrame.this);
+
+                    // Nội dung
+                    JLabel message = new JLabel(
+                        "<html>Hôm nay trời khá đẹp!<br>" +
+                        "Mình nghĩ bạn nên nấu món: <b>" + randomRecipe.getTitle() + "</b></html>",
+                        SwingConstants.CENTER);
+                    message.setBorder(BorderFactory.createEmptyBorder(20, 10, 10, 10));
+                    dialog.add(message, BorderLayout.CENTER);
+
+                    // Nút
+                    JPanel buttonPanel = new JPanel();
+                    JButton viewButton = new JButton("Xem chi tiết");
+                    JButton closeButton = new JButton("Đóng");
+                    buttonPanel.add(viewButton);
+                    buttonPanel.add(closeButton);
+                    dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+                    viewButton.addActionListener(e -> {
+                        dialog.dispose(); // đóng popup trước
+                        RecipeDetailsFrame detail = new RecipeDetailsFrame(randomRecipe);
+                        detail.setVisible(true);
+                    });
+
+                    closeButton.addActionListener(e -> dialog.dispose());
+
+                    dialog.setVisible(true);
+
+                } catch (Exception ex) {
+                    ex.printStackTrace();
                 }
             }
         };
 
         worker.execute();
-    }
-    private void showRandomRecipe(Recipe recipe) {
-        
     }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JButton btnAdd;
