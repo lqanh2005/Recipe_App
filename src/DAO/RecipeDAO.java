@@ -8,6 +8,7 @@ import java.util.ArrayList;
 import model.Recipe;
 import model.User;
 import java.sql.*;
+import java.util.List;
 import model.Ingredient;
 import model.Recipe_Ingredient;
 import model.Step;
@@ -324,5 +325,116 @@ public class RecipeDAO {
             e.printStackTrace();
             throw e; 
         } 
+    }
+    public List<String> searchAll(String keyword) {
+        List<String> result = new ArrayList<>();
+
+        String sql = """
+            SELECT DISTINCT r.title
+            FROM Recipe r
+            LEFT JOIN Recipe_Ingredient ri ON r.recipeID = ri.recipeID
+            LEFT JOIN Ingredient i ON ri.ingredientID = i.ingredientID
+            WHERE r.title LIKE ?
+               OR i.name LIKE ?
+        """;
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, "%" + keyword + "%");
+            stmt.setString(2, "%" + keyword + "%");
+
+            ResultSet rs = stmt.executeQuery();
+            while (rs.next()) {
+                result.add(rs.getString("title"));
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return result;
+    }
+    public List<String> getRecipeFromDB(String query){
+        List<String> result = new ArrayList<>();
+        String sql = "SELECT title FROM recipe WHERE title LIKE ?";
+        try (Connection conn = DBConnection.getConnection();
+            PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+           stmt.setString(1, "%" + query + "%"); // tìm tên chứa query
+           ResultSet rs = stmt.executeQuery();
+
+           while (rs.next()) {
+               result.add(rs.getString("title"));
+           }
+       } catch (SQLException e) {
+           e.printStackTrace();
+       }
+        return result;
+    }
+    public List<String> searchRecipesByIngredient(String keyword) {
+        List<String> result = new ArrayList<>();
+
+        String sql = """
+            SELECT DISTINCT r.title
+            FROM Recipe r
+            JOIN Recipe_Ingredient ri ON r.recipeID = ri.recipeID
+            JOIN Ingredient i ON ri.ingredientID = i.ingredientID
+            WHERE i.name LIKE ?
+        """;
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, "%" + keyword + "%");
+            ResultSet rs = stmt.executeQuery();
+
+            while (rs.next()) {
+                result.add(rs.getString("title"));
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return result;
+    }
+    public int getRecipeCount() {
+        int count = 0;
+        String sql = "SELECT COUNT(*) AS c FROM Recipe";
+
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql);
+             ResultSet rs = stmt.executeQuery()) {
+
+            if (rs.next()) {
+                count = rs.getInt("c");
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return count;
+    }
+    public int getRandomRecipeId() {
+        int count = getRecipeCount();
+        if (count == 0) return -1;
+
+        return (int)(Math.random() * count) + 1;  // random 1 → count
+    }
+    public int getIdByTitle(String title){
+        String sql = "SELECT recipeID FROM recipe WHERE title = ?";
+        try (Connection conn = DBConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setString(1, title);
+            try(ResultSet rs = stmt.executeQuery()){
+                if(rs.next()){
+                    return rs.getInt("recipeID");
+                }
+            }
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return -1;
     }
 }
