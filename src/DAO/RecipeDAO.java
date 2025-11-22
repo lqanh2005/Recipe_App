@@ -397,29 +397,23 @@ public class RecipeDAO {
         }
         return result;
     }
-    public int getRecipeCount() {
-        int count = 0;
-        String sql = "SELECT COUNT(*) AS c FROM Recipe";
+    public int getRandomRecipeId() {
+         String sql = "SELECT recipeID FROM Recipe ORDER BY RAND() LIMIT 1"; // SQLite/MySQL: ORDER BY RAND()
+        int randomId = -1;
 
         try (Connection conn = DBConnection.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql);
              ResultSet rs = stmt.executeQuery()) {
 
             if (rs.next()) {
-                count = rs.getInt("c");
+                randomId = rs.getInt("recipeID");
             }
 
         } catch (SQLException e) {
             e.printStackTrace();
         }
 
-        return count;
-    }
-    public int getRandomRecipeId() {
-        int count = getRecipeCount();
-        if (count == 0) return -1;
-
-        return (int)(Math.random() * count) + 1;  // random 1 → count
+        return randomId;
     }
     public int getIdByTitle(String title){
         String sql = "SELECT recipeID FROM recipe WHERE title = ?";

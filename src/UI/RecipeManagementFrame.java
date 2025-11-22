@@ -21,7 +21,6 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
         searchTimer.setRepeats(false);
         popupMenu.setDefaultLightWeightPopupEnabled(false);
         popupMenu.setFocusable(false);
-        showRandomRecipe();
     }
     @SuppressWarnings("unchecked")
     // <editor-fold defaultstate="collapsed" desc="Generated Code">//GEN-BEGIN:initComponents
@@ -237,8 +236,11 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
         frame.setVisible(true);
     }//GEN-LAST:event_btnAddActionPerformed
     public static void main(String args[]) {
-        java.awt.EventQueue.invokeLater(() -> {try {
-            new RecipeManagementFrame().setVisible(true);
+        java.awt.EventQueue.invokeLater(() -> {
+            try {
+                RecipeManagementFrame frame = new RecipeManagementFrame();
+                frame.setVisible(true); 
+                frame.showRandomRecipe(); 
             } catch (Exception ex) {
                 System.getLogger(RecipeManagementFrame.class.getName()).log(System.Logger.Level.ERROR, (String) null, ex);
             }
@@ -328,7 +330,6 @@ public class RecipeManagementFrame extends javax.swing.JFrame {
     }
     private void showRandomRecipe() {
         int randomId = recipeController.recipeDAO.getRandomRecipeId();
-        if (randomId == -1) return;
 
         SwingWorker<Recipe, Void> worker = new SwingWorker<>() {
             @Override
